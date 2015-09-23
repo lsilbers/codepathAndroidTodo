@@ -1,29 +1,29 @@
 package com.lsilberstein.todoapp;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import org.apache.commons.io.FileUtils;
+import com.lsilberstein.todoapp.data.TodoArrayAdapter;
+import com.lsilberstein.todoapp.data.TodoItem;
 
-import java.io.File;
-import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
-    public static final String POSITION_KEY = "position";
+    public static SimpleDateFormat formater = new SimpleDateFormat("MM/dd");
     public static final String ITEM_KEY = "item";
     private static final int REQUEST_CODE = 1;
 
-    private ArrayList<String> todoItems;
-    private ArrayAdapter<String> aTodoAdapter;
+    private TodoArrayAdapter todoArrayAdapter;
+    private ArrayList<TodoItem> todoItems;
     private ListView lvItems;
     private EditText etNewItem;
 
@@ -31,71 +31,46 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        populateArrayItems();
-        lvItems = (ListView) findViewById(R.id.lvItems);
-        lvItems.setAdapter(aTodoAdapter);
-        etNewItem = (EditText) findViewById(R.id.etNewItem);
-        lvItems.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                todoItems.remove(position);
-                aTodoAdapter.notifyDataSetChanged();
-                writeItems();
-                return true;
-            }
-        });
 
-        // when an item is clicked we want to go to the other activity
+        // set up initial data
+        todoItems = new ArrayList<>(TodoItem.getItems());
+        todoArrayAdapter = new TodoArrayAdapter(this, todoItems);
+
+        lvItems = (ListView) findViewById(R.id.lvItems);
+        lvItems.setAdapter(todoArrayAdapter);
+        etNewItem = (EditText) findViewById(R.id.etNewItem);
+
+        // when an item is clicked we send an edit intent for the clicked item
         lvItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent i = new Intent(MainActivity.this, EditActivity.class);
-
-                // add the data we want to send
-                i.putExtra(POSITION_KEY, position);
-                i.putExtra(ITEM_KEY, todoItems.get(position));
-
-                startActivityForResult(i, REQUEST_CODE);
+                sendEditIntent(todoItems.get(position).remoteId.toString());
             }
         });
+    }
+
+    // Sends an intent to edit the item given by the specified id.
+    private void sendEditIntent(String id) {
+        Intent i = new Intent(MainActivity.this, EditActivity.class);
+        i.putExtra(ITEM_KEY, id);
+        startActivityForResult(i, REQUEST_CODE);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // check that it was ok
         if(requestCode == REQUEST_CODE && resultCode == RESULT_OK){
-            int pos = data.getIntExtra(POSITION_KEY,-1);
-            todoItems.remove(pos);
-            todoItems.add(pos, data.getStringExtra(ITEM_KEY));
-            aTodoAdapter.notifyDataSetChanged();
-            writeItems();
+            // reload data from db
+            refreshData();
         }
     }
 
-    private void populateArrayItems() {
-        todoItems = new ArrayList<>();
-        readItems();
-        aTodoAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, todoItems);
-    }
-
-    private void readItems() {
-        File filesDir = getFilesDir();
-        File file = new File(filesDir,"todo.txt");
-        try {
-            todoItems = new ArrayList<>(FileUtils.readLines(file));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void writeItems() {
-        File filesDir = getFilesDir();
-        File file = new File(filesDir,"todo.txt");
-        try {
-            FileUtils.writeLines(file, todoItems);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    // Reloads the data from the database
+    private void refreshData() {
+        todoArrayAdapter.clear();
+        todoItems = new ArrayList<>(TodoItem.getItems());
+        todoArrayAdapter.addAll(todoItems);
+        todoArrayAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -120,9 +95,12 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    // click handler for the add button
     public void onAddItem(View view) {
-        aTodoAdapter.add(etNewItem.getText().toString());
+        String shortName = etNewItem.getText().toString();
+        TodoItem newItem = new TodoItem(shortName, null, 3, Calendar.getInstance());
+        newItem.save();
         etNewItem.setText("");
-        writeItems();
+        sendEditIntent(newItem.remoteId.toString());
     }
 }

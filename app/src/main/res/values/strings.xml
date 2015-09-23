@@ -1,11 +1,18 @@
 <resources>
     <string name="app_name">TodoApp</string>
-
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="add">Add</string>
     <string name="add_item">Add Item</string>
     <string name="title_activity_edit">EditActivity</string>
     <string name="edit_text_label">Edit Item Below</string>
     <string name="save_button_label">Save</string>
+    <string name="p1">P1</string>
+    <string name="p2">P2</string>
+    <string name="p3">P3</string>
+    <string name="p4">P4</string>
+    <string name="delete">Delete Item</string>
+    <string name="due_date">Date Due:</string>
+    <string name="details_label">Details:</string>
+    <string name="details_hint">Put the details of the activity here</string>
+    <string name="button_set_date">Set Date</string>
 </resources>

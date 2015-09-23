@@ -1,26 +1,39 @@
 package com.lsilberstein.todoapp;
 
+import android.app.DatePickerDialog;
+import android.app.DialogFragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.Spinner;
 
-public class EditActivity extends AppCompatActivity {
+import com.lsilberstein.todoapp.data.TodoItem;
 
-    private int position;
-    private String item; // maybe this doesn't need to be a member variable
-    private EditText etEditText;
+import java.util.Calendar;
+import java.util.UUID;
+
+public class EditActivity extends AppCompatActivity  implements DatePickerDialog.OnDateSetListener{
+
+    private TodoItem item;
+    private EditText etShortName;
+    private Spinner spPriority;
+    private EditText etDetails;
+    private Button btnSetDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit);
         // pull the info we pass from the main activity
-        item = getIntent().getStringExtra(MainActivity.ITEM_KEY);
-        position = getIntent().getIntExtra(MainActivity.POSITION_KEY,-1); // -1 indicates an error
+        String id = getIntent().getStringExtra(MainActivity.ITEM_KEY);
+        item = TodoItem.getItem(UUID.fromString(id));
         prepareScreen();
     }
 
@@ -28,10 +41,42 @@ public class EditActivity extends AppCompatActivity {
     sets the appropriate value for our text field and puts the cursor at the end of the current text
      */
     private void prepareScreen() {
-        etEditText = (EditText) findViewById(R.id.etEditText);
-        etEditText.setText(item);
-        etEditText.setSelection(item.length());
-        etEditText.requestFocus();
+        prepareSpinner();
+        prepareShortName();
+        prepareDetails();
+        prepareDate();
+    }
+
+    private void prepareDate() {
+        btnSetDate = (Button) findViewById(R.id.btnSetDate);
+        btnSetDate.setText(MainActivity.formater.format(item.dueDate.getTime()));
+    }
+
+    private void prepareDetails() {
+        etDetails = (EditText) findViewById(R.id.etDetails);
+        etDetails.setText(item.details);
+    }
+
+    private void prepareShortName() {
+        String sn = item.shortName;
+        etShortName = (EditText) findViewById(R.id.etShortName);
+        etShortName.setText(sn);
+        etShortName.setSelection(sn.length());
+        etShortName.requestFocus();
+    }
+
+    private void prepareSpinner() {
+        spPriority = (Spinner) findViewById(R.id.spPriority);
+        // Create an ArrayAdapter using the string array and a default spinner layout
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.priorities_array, android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Apply the adapter to the spinner
+        spPriority.setAdapter(adapter);
+        Integer p = item.priority;
+        // default to P4 if no priority set
+        spPriority.setSelection(p != null ? p : 3);
     }
 
     @Override
@@ -58,10 +103,39 @@ public class EditActivity extends AppCompatActivity {
 
     // Saves the changes to the item and returns the user to the main screen
     public void onSave(View view) {
+        item.priority = spPriority.getSelectedItemPosition();
+        item.shortName = etShortName.getText().toString();
+        item.details = etDetails.getText().toString();
+        item.save();
+        backToMain();
+    }
+
+    // Delete this item from the database and returns to the main screen
+    public void onDelete(View view) {
+        item.delete();
+        backToMain();
+    }
+
+    // Sends the completion intent back to the main screen
+    private void backToMain() {
         Intent data = new Intent();
-        data.putExtra(MainActivity.POSITION_KEY, position);
-        data.putExtra(MainActivity.ITEM_KEY, etEditText.getText().toString());
         setResult(RESULT_OK, data);
         finish();
+    }
+
+    @Override
+    public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+        Calendar dueDate = item.dueDate;
+        dueDate.set(year, monthOfYear, dayOfMonth);
+        item.save();
+        btnSetDate.setText(MainActivity.formater.format(item.dueDate.getTime()));
+    }
+
+    public void onSetDate(View view) {
+        Bundle bundle = new Bundle();
+        bundle.putSerializable(MainActivity.ITEM_KEY, item.dueDate);
+        DialogFragment newFragment = new DatePickerFragment();
+        newFragment.setArguments(bundle);
+        newFragment.show(getFragmentManager(), "datePicker");
     }
 }
