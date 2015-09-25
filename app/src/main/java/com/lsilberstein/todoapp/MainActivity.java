@@ -17,7 +17,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements EditDialog.EditDialogListener {
     public static SimpleDateFormat formater = new SimpleDateFormat("MM/dd");
     public static final String ITEM_KEY = "item";
     private static final int REQUEST_CODE = 1;
@@ -44,16 +44,15 @@ public class MainActivity extends AppCompatActivity {
         lvItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                sendEditIntent(todoItems.get(position).remoteId.toString());
+                showEditDialog(todoItems.get(position).remoteId.toString());
             }
         });
     }
 
     // Sends an intent to edit the item given by the specified id.
-    private void sendEditIntent(String id) {
-        Intent i = new Intent(MainActivity.this, EditActivity.class);
-        i.putExtra(ITEM_KEY, id);
-        startActivityForResult(i, REQUEST_CODE);
+    private void showEditDialog(String id) {
+        EditDialog edit = EditDialog.newInstance(id);
+        edit.show(getFragmentManager(), "edit_dialog");
     }
 
     @Override
@@ -101,6 +100,11 @@ public class MainActivity extends AppCompatActivity {
         TodoItem newItem = new TodoItem(shortName, null, 3, Calendar.getInstance());
         newItem.save();
         etNewItem.setText("");
-        sendEditIntent(newItem.remoteId.toString());
+        showEditDialog(newItem.remoteId.toString());
+    }
+
+    @Override
+    public void onEditFinished() {
+        refreshData();
     }
 }
