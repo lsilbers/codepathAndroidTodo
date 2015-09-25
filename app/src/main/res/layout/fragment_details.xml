@@ -1,0 +1,28 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context="com.lsilberstein.todoapp.DetailsFragment"
+    android:background="@android:drawable/dialog_frame"
+    >
+
+    <TextView
+        android:maxHeight="@dimen/details_fragment_max_hight"
+        android:paddingTop="20dp"
+        android:layout_width="match_parent"
+        android:scrollbars="vertical"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:id="@+id/tvDetailsWindow"
+        android:background="#FFFFFFFF"
+    />
+
+    <ImageView
+        android:id="@+id/ivCloseDetails"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right"
+        android:src="@drawable/dialog_close"
+        />
+
+</FrameLayout>

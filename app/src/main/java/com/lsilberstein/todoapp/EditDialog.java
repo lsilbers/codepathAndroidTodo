@@ -18,7 +18,6 @@ import android.widget.Spinner;
 import com.lsilberstein.todoapp.data.TodoItem;
 
 import java.util.Calendar;
-import java.util.UUID;
 
 public class EditDialog extends DialogFragment implements DatePickerDialog.OnDateSetListener, View.OnClickListener {
 
@@ -43,13 +42,13 @@ public class EditDialog extends DialogFragment implements DatePickerDialog.OnDat
 
     /**
      * Use this method to create new EditDialogs
-     * @param id - the String representation of the item UUID that is being edited
+     * @param item - the item that is being edited
      * @return a new EditDialog to be anle to make changes to that item
      */
-    public static EditDialog newInstance(String id) {
+    public static EditDialog newInstance(TodoItem item) {
         EditDialog frag = new EditDialog();
         Bundle args = new Bundle();
-        args.putString(MainActivity.ITEM_KEY, id);
+        args.putSerializable(MainActivity.ITEM_KEY, item);
         frag.setArguments(args);
         return frag;
     }
@@ -70,8 +69,7 @@ public class EditDialog extends DialogFragment implements DatePickerDialog.OnDat
         super.onViewCreated(view, savedInstanceState);
         // Get field from view
         // Fetch arguments from bundle and set title
-        String id = getArguments().getString(MainActivity.ITEM_KEY);
-        item = TodoItem.getItem(UUID.fromString(id));
+        item = (TodoItem) getArguments().getSerializable(MainActivity.ITEM_KEY);
         prepareScreen(view);
         getDialog().getWindow().setSoftInputMode(
                 WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);

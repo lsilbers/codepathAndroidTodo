@@ -15,4 +15,8 @@
     <string name="details_label">Details:</string>
     <string name="details_hint">Put the details of the activity here</string>
     <string name="button_set_date">Set Date</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="default_details_text">Add details to your item in the edit window</string>
 </resources>
