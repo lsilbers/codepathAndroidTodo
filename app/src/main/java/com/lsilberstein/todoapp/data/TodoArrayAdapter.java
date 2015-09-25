@@ -34,22 +34,27 @@ public class TodoArrayAdapter extends ArrayAdapter<TodoItem>{
         TextView tvDue = (TextView) convertView.findViewById(R.id.tvDue);
 
         String priority;
-        // todo also switch the style
+        int style = -1;
         switch (item.priority) {
             case 0:
                 priority = context.getString(R.string.p1);
+                style = R.style.priority1;
                 break;
             case 1:
                 priority = context.getString(R.string.p2);
+                style = R.style.priority2;
                 break;
             case 2:
                 priority = context.getString(R.string.p3);
+                style = R.style.priority3;
                 break;
             default:
                 priority = context.getString(R.string.p4);
+                style = R.style.priority4;
                 break;
         }
         tvPriority.setText(priority);
+        tvPriority.setTextAppearance(context, style);
         tvBody.setText(item.shortName);
         tvDue.setText(MainActivity.formater.format(item.dueDate.getTime()));
 
