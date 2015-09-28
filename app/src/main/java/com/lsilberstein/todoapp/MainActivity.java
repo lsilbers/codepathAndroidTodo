@@ -3,8 +3,11 @@ package com.lsilberstein.todoapp;
 import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,12 +19,14 @@ import android.widget.ListView;
 import com.lsilberstein.todoapp.data.TodoArrayAdapter;
 import com.lsilberstein.todoapp.data.TodoItem;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity implements EditDialog.EditDialogListener, DetailsFragment.OnFragmentInteractionListener {
     private static final String DETAILS_FRAGMENT = "DETAILS_FRAGMENT";
+    private static final String TAG = "todo_app";
     public static SimpleDateFormat formater = new SimpleDateFormat("MM/dd");
     public static final String ITEM_KEY = "item";
     private static final int REQUEST_CODE = 1;
@@ -59,9 +64,10 @@ public class MainActivity extends AppCompatActivity implements EditDialog.EditDi
                 }
                 selectedItem = view;
                 view.setBackgroundColor(Color.GRAY);
+                TodoItem item = todoItems.get(position);
                 // Begin the transaction
                 FragmentTransaction ft = getFragmentManager().beginTransaction();
-                ft.replace(R.id.frmDetails, DetailsFragment.newInstance(todoItems.get(position).details),DETAILS_FRAGMENT);
+                ft.replace(R.id.frmDetails, DetailsFragment.newInstance(item.details, item.image),DETAILS_FRAGMENT);
                 ft.commit();
             }
         });
@@ -124,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements EditDialog.EditDi
     // click handler for the add button
     public void onAddItem(View view) {
         String shortName = etNewItem.getText().toString();
-        TodoItem newItem = new TodoItem(shortName, null, 3, Calendar.getInstance());
+        TodoItem newItem = new TodoItem(shortName, null, 3, Calendar.getInstance(), null);
         newItem.save();
         etNewItem.setText("");
         showEditDialog(newItem);
@@ -154,5 +160,26 @@ public class MainActivity extends AppCompatActivity implements EditDialog.EditDi
             ft.remove(getFragmentManager().findFragmentByTag(DETAILS_FRAGMENT));
             ft.commit();
         }
+    }
+
+    // Returns the Uri for a photo stored on disk given the fileName
+    public Uri getPhotoFileUri(String fileName) {
+        // Only continue if the SD Card is mounted
+        if (isExternalStorageAvailable()) {
+            // Get safe storage directory for photos (folder labelled by our todo_app tag)
+            File mediaStorageDir = new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), TAG);
+            // Create the storage directory if it does not exist
+            if (!mediaStorageDir.exists() && !mediaStorageDir.mkdirs()){
+                Log.d(TAG, "failed to create directory");
+            }
+            // Return the file target for the photo based on filename
+            return Uri.fromFile(new File(mediaStorageDir.getPath() + File.separator + fileName));
+        }
+        return null;
+    }
+
+    private boolean isExternalStorageAvailable() {
+        return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
     }
 }

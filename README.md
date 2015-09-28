@@ -4,7 +4,7 @@
 
 Submitted by: **Leopold Silberstein**
 
-Time spent: **15** hours spent in total
+Time spent: **25** hours spent in total
 
 ## User Stories
 
@@ -28,6 +28,7 @@ The following **optional** features are implemented:
 The following **additional** features are implemented:
 
 * [x] Added a details view window that displays on item click and closes on click of the close icon, selection of a new item, or editing of an item.
+* [ ] Added the ability to take a picture and store it as the background of the details section.
 
 ## Video Walkthrough 
 
@@ -44,7 +45,7 @@ Describe any challenges encountered while building the app.
 
 ## License
 
-    Copyright [2015] [Leopold Silberstein]
+    Copyright 2015 Leopold Silberstein
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

@@ -1,8 +1,5 @@
 package com.lsilberstein.todoapp.data;
 
-import android.database.Cursor;
-
-import com.activeandroid.Cache;
 import com.activeandroid.Model;
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
@@ -30,6 +27,9 @@ public class TodoItem extends Model implements Serializable {
     @Column(name = "Priority")
     public Integer priority;
 
+    @Column(name = "Image")
+    public String image;
+
     @Column(name = "DueDate")
     public Calendar dueDate = Calendar.getInstance();
 
@@ -38,13 +38,14 @@ public class TodoItem extends Model implements Serializable {
         super();
     }
 
-    public TodoItem(String shortName, String details, Integer priority, Calendar dueDate){
+    public TodoItem(String shortName, String details, Integer priority, Calendar dueDate, String imageFile){
         super();
         this.remoteId = UUID.randomUUID();
         this.shortName = shortName;
         this.details = details;
         this.dueDate = dueDate;
         this.priority = priority;
+        this.image = imageFile;
     }
 
     public static TodoItem getItem(UUID remoteId) {
@@ -59,16 +60,5 @@ public class TodoItem extends Model implements Serializable {
                 .from(TodoItem.class)
                 .orderBy("Priority ASC")
                 .execute();
-    }
-
-    // Return cursor for TodoItems. Not using this since it sort of seems to defeat the point of ORM
-    public static Cursor fetchResultCursor() {
-        String tableName = Cache.getTableInfo(TodoItem.class).getTableName();
-        // Query all items without any conditions
-        String resultRecords = new Select(tableName + ".*, " + tableName + ".Id as _id").
-                from(TodoItem.class).toSql();
-        // Execute query on the underlying ActiveAndroid SQLite database
-        Cursor resultCursor = Cache.openDatabase().rawQuery(resultRecords, null);
-        return resultCursor;
     }
 }

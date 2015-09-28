@@ -9,7 +9,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -26,12 +25,13 @@ import android.widget.Toast;
 
 import com.lsilberstein.todoapp.data.TodoItem;
 
-import java.io.File;
 import java.util.Calendar;
 
 public class EditDialog extends DialogFragment implements DatePickerDialog.OnDateSetListener, View.OnClickListener {
 
     public static final int PHOTO_CODE = 1046;
+    private static final String IMAGE_EXTENSION = ".jpg";
+    private static final String TAG = "edit_dialog";
 
     private TodoItem item;
     private EditText etShortName;
@@ -39,8 +39,7 @@ public class EditDialog extends DialogFragment implements DatePickerDialog.OnDat
     private EditText etDetails;
     private Button btnSetDate;
     private EditDialogListener listener;
-    private Activity context;
-    private String photoFileName = "photo.jpg";
+    private MainActivity mainActivity;
 
     // calling class should implement this interface to recieve notification of dialog actions
     public interface EditDialogListener {
@@ -60,6 +59,7 @@ public class EditDialog extends DialogFragment implements DatePickerDialog.OnDat
      * @return a new EditDialog to be anle to make changes to that item
      */
     public static EditDialog newInstance(TodoItem item) {
+        Log.d(TAG, "created a new edit dialog with item id " + item.remoteId.toString());
         EditDialog frag = new EditDialog();
         Bundle args = new Bundle();
         args.putSerializable(MainActivity.ITEM_KEY, item);
@@ -71,9 +71,9 @@ public class EditDialog extends DialogFragment implements DatePickerDialog.OnDat
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        context = getActivity();
-        if (context instanceof EditDialogListener) {
-            this.listener = (EditDialogListener) context;
+        mainActivity = (MainActivity) getActivity();
+        if (mainActivity instanceof EditDialogListener) {
+            this.listener = (EditDialogListener) mainActivity;
         }
         return inflater.inflate(R.layout.fragment_edit, container);
     }
@@ -113,6 +113,9 @@ public class EditDialog extends DialogFragment implements DatePickerDialog.OnDat
     private void prepareDetails(View view) {
         etDetails = (EditText) view.findViewById(R.id.etDetails);
         etDetails.setText(item.details);
+        if (item.image != null) {
+            setBackgroundImage();
+        }
     }
 
     // populates the title name
@@ -196,54 +199,36 @@ public class EditDialog extends DialogFragment implements DatePickerDialog.OnDat
 
     // called when the camera button is clicked
     private void onSetPhoto() {
+        item.image = item.remoteId.toString() + IMAGE_EXTENSION;
         // create Intent to take a picture and return control to the calling application
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, getPhotoFileUri(photoFileName)); // set the image file name
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, mainActivity.getPhotoFileUri(item.image)); // set the image file name
         // Start the image capture intent to take photo
         startActivityForResult(intent, PHOTO_CODE);
     }
 
 
-    // Returns the Uri for a photo stored on disk given the fileName
-    public Uri getPhotoFileUri(String fileName) {
-        // Only continue if the SD Card is mounted
-        if (isExternalStorageAvailable()) {
 
-            // Get safe storage directory for photos
-            File mediaStorageDir = new File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "edit_dialog");
-
-            // Create the storage directory if it does not exist
-            if (!mediaStorageDir.exists() && !mediaStorageDir.mkdirs()){
-                Log.d("edit_dialog", "failed to create directory");
-            }
-
-            // Return the file target for the photo based on filename
-            return Uri.fromFile(new File(mediaStorageDir.getPath() + File.separator + fileName));
-        }
-        return null;
-    }
-
-    private boolean isExternalStorageAvailable() {
-        String state = Environment.getExternalStorageState();
-        if (state.equals(Environment.MEDIA_MOUNTED)) {
-            return true;
-        }
-        return false;
-    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == PHOTO_CODE) {
-            if (resultCode == context.RESULT_OK) {
-                Uri takenPhotoUri = getPhotoFileUri(photoFileName);
-                // by this point we have the camera photo on disk
-                Bitmap takenImage = BitmapFactory.decodeFile(takenPhotoUri.getPath());
-
-                etDetails.setBackground(new BitmapDrawable(takenImage));
+            if (resultCode == Activity.RESULT_OK) {
+                Log.d(TAG, "successfully took a photo. Filename : " + item.image);
+                setBackgroundImage();
             } else { // Result was a failure
-                Toast.makeText(context, "Picture wasn't taken!", Toast.LENGTH_SHORT).show();
+                item.image = null;
+                Log.d(TAG, "Failed to take a photo for item id " + item.remoteId.toString());
+                Toast.makeText(mainActivity, "Picture wasn't taken!", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private void setBackgroundImage() {
+        Uri imageUri = mainActivity.getPhotoFileUri(item.image);
+        Log.d(TAG, "Got uri for image " + item.image + ". Uri: " + imageUri.getPath());
+        // by this point we have the camera photo on disk
+        Bitmap image = BitmapFactory.decodeFile(imageUri.getPath());
+        etDetails.setBackground(new BitmapDrawable(image));
     }
 }
