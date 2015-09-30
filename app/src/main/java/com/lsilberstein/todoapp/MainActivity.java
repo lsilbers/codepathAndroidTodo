@@ -2,9 +2,16 @@ package com.lsilberstein.todoapp;
 
 import android.app.FragmentTransaction;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -12,31 +19,45 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 
 import com.lsilberstein.todoapp.data.TodoArrayAdapter;
 import com.lsilberstein.todoapp.data.TodoItem;
 
+import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-public class MainActivity extends AppCompatActivity implements EditDialog.EditDialogListener, DetailsFragment.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity implements EditDialog.EditDialogListener, DetailsFragment.OnFragmentInteractionListener, SettingsDialog.OnSettingsInteractionListener {
     private static final String DETAILS_FRAGMENT = "DETAILS_FRAGMENT";
+    private static final int BACKGROUND_ALPHA = 125;
     public static SimpleDateFormat formater = new SimpleDateFormat("MM/dd");
     public static final String ITEM_KEY = "item";
     private static final int REQUEST_CODE = 1;
+    public static final String APP_TAG = "todo_app";
+    public static final String BACKGROUND = "photo.jpg";
+    private static String STORED_BACKGROUND = "storedBackground";
 
     private View selectedItem;
     private TodoArrayAdapter todoArrayAdapter;
     private ArrayList<TodoItem> todoItems;
     private ListView lvItems;
     private EditText etNewItem;
+    private RelativeLayout rlMain;
     private int color;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        rlMain = (RelativeLayout) findViewById(R.id.rlMain);
+        String backgroundFile = getPreferences(MODE_PRIVATE).getString(STORED_BACKGROUND,null);
+        if (backgroundFile != null) {
+            changeBackground(Uri.parse(backgroundFile));
+        }
 
         TypedValue typedValue = new TypedValue();
         getTheme().resolveAttribute(R.attr.color, typedValue, true);
@@ -74,6 +95,26 @@ public class MainActivity extends AppCompatActivity implements EditDialog.EditDi
                 return true;
             }
         });
+    }
+
+    private void changeBackground(Uri backgroundFile) {
+        Bitmap backgroundImage = null;
+        switch (backgroundFile.getScheme()) {
+            case "file":
+                backgroundImage = BitmapFactory.decodeFile(backgroundFile.getPath());
+                break;
+            case "content":
+                try {
+                    backgroundImage = MediaStore.Images.Media.getBitmap(this.getContentResolver(), backgroundFile);
+                } catch (IOException e) {
+                    Log.e(APP_TAG, "failed to load the file from the mediastore");
+                }
+                break;
+            default:
+                break;
+        }
+        rlMain.setBackground(new BitmapDrawable(backgroundImage));
+        rlMain.getBackground().setAlpha(BACKGROUND_ALPHA);
     }
 
     // Sends an intent to edit the item given by the specified id.
@@ -155,4 +196,50 @@ public class MainActivity extends AppCompatActivity implements EditDialog.EditDi
             ft.commit();
         }
     }
+
+    // Fired when the setting button is clicked
+    public void onSettingsClick(MenuItem item) {
+        SettingsDialog settingsDialog = new SettingsDialog();
+        settingsDialog.show(getFragmentManager(), "settings_dialog");
+    }
+
+    @Override
+    public void onSettingsDone(Uri photo) {
+        if (photo != null) {
+            changeBackground(photo);
+            getPreferences(MODE_PRIVATE)
+                    .edit()
+                    .putString(STORED_BACKGROUND, photo.toString())
+                    .commit();
+        }
+    }
+
+    // Returns the Uri for a photo stored on disk given the fileName
+    public Uri getPhotoFileUri(String fileName) {
+        // Only continue if the SD Card is mounted
+        if (isExternalStorageAvailable()) {
+
+            // Get safe storage directory for photos
+            File mediaStorageDir = new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), APP_TAG);
+
+            // Create the storage directory if it does not exist
+            if (!mediaStorageDir.exists() && !mediaStorageDir.mkdirs()){
+                Log.d(APP_TAG, "failed to create directory");
+            }
+
+            // Return the file target for the photo based on filename
+            return Uri.fromFile(new File(mediaStorageDir.getPath() + File.separator + fileName));
+        }
+        return null;
+    }
+
+    private boolean isExternalStorageAvailable() {
+        String state = Environment.getExternalStorageState();
+        if (state.equals(Environment.MEDIA_MOUNTED)) {
+            return true;
+        }
+        return false;
+    }
+
 }
